@@ -1,0 +1,6 @@
+ru.spbstu.pipeline.TrivialReader reader.conf
+ru.spbstu.pipeline.TrivialWriter writer.conf
+ru.spbstu.pipeline.RLE encode.conf
+ru.spbstu.pipeline.RLE decode.conf
+ru.spbstu.pipeline.ExecutorDA3 danya.conf
+ru.spbstu.pipeline.ExecutorDA3 danya.conf

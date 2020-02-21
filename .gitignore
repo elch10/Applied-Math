@@ -1,0 +1,5 @@
+.vscode
+.idea
+*.out
+out
+META-INF

@@ -1,0 +1,5 @@
+INPUT_FILE  =   input.txt
+OUTPUT_FILE=    output.txt
+
+LOG_FILE = log.log
+MODE=Encode
