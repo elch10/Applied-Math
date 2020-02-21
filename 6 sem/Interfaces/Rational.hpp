@@ -29,7 +29,14 @@ public:
     int getNum() const;
     int getDenom() const;
 private:
+    /*
+     * Makes sure, that sign is stored only in the numerator
+     */
     void resolveSign();
+
+    /*
+     * Contracts rational number to irreducible fraction
+     */
     void contract();
 
     int num_, denom_;

@@ -3,6 +3,10 @@
 
 #include "Rational.hpp"
 
+/*
+ * Represents real number.
+ * It is represented as segment beetwen two rational numbers
+ */
 class Real
 {
 public:
