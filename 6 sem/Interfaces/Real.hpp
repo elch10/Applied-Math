@@ -10,25 +10,26 @@
 class Real
 {
 public:
-    Real(const Rational &left, const Rational &right);
 
-    Real &operator+= (const Real &rhs);
-    Real &operator-= (const Real &rhs);
-    Real &operator*= (const Real &rhs);
-    Real &operator/= (const Real &rhs);
+    const Rational *getLeft() const;
+    const Rational *getRight() const;
 
-    Real operator+ (const Real &rhs) const;
-    Real operator- (const Real &rhs) const;
-    Real operator* (const Real &rhs) const;
-    Real operator/ (const Real &rhs) const;
-
-    Rational getLeft() const;
-    Rational getRight() const;
-
+    /*
+     * It doesn't deep copy. It moves resources. 
+     */
+    static Real *create(Rational *left, Rational *right);
 private:
-    Rational left_, right_;
+    Real(Rational *left, Rational *right);
+    RationalUP left_, right_;
 };
 
+using RealUP = std::unique_ptr<Real>;
+
 std::ostream &operator<< (std::ostream &out, const Real &r);
+
+Real *add(const Real *lhs, const Real *rhs);
+Real *sub(const Real *lhs, const Real *rhs);
+Real *mul(const Real *lhs, const Real *rhs);
+Real *div(const Real *lhs, const Real *rhs);
 
 #endif

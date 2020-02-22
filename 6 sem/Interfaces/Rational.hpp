@@ -2,33 +2,21 @@
 #define RATIONAL_HPP
 
 #include <sstream>
+#include <memory>
 
 class Rational
 {
 public:
-    Rational(int num);
-    Rational(int num, int denom);
-
-    Rational &operator+= (const Rational &rhs);
-    Rational &operator-= (const Rational &rhs);
-    Rational &operator*= (const Rational &rhs);
-    Rational &operator/= (const Rational &rhs);
-
-    Rational operator+ (const Rational &rhs) const;
-    Rational operator- (const Rational &rhs) const;
-    Rational operator* (const Rational &rhs) const;
-    Rational operator/ (const Rational &rhs) const;
-
-    bool operator< (const Rational &rhs) const;
-    bool operator> (const Rational &rhs) const;
-    bool operator== (const Rational &rhs) const;
-
-    bool operator<= (const Rational &rhs) const;
-    bool operator>= (const Rational &rhs) const;
-    
     int getNum() const;
     int getDenom() const;
+    Rational *copy() const;
+
+    static Rational *create(int num, int denom);
 private:
+    Rational(int num, int denom);
+    Rational(const Rational &rhs) = delete;
+    Rational &operator=(const Rational &rhs) = delete;
+
     /*
      * Makes sure, that sign is stored only in the numerator
      */
@@ -42,11 +30,24 @@ private:
     int num_, denom_;
 };
 
+using RationalUP = std::unique_ptr<Rational>;
+
+std::ostream &operator<< (std::ostream &out, const Rational &r);
+
 
 int greatestCommonDivision (int a, int b);
 int leastCommonMultiplier (int a, int b);
 
-std::ostream &operator<< (std::ostream &out, const Rational &r);
+/*
+ * This 4 functions create new element. Do not forget to free them.
+ */
+Rational *add(const Rational *lhs, const Rational *rhs);
+Rational *sub(const Rational *lhs, const Rational *rhs);
+Rational *mul(const Rational *lhs, const Rational *rhs);
+Rational *div(const Rational *lhs, const Rational *rhs);
 
+
+Rational *min(Rational *lhs, Rational *rhs);
+Rational *max(Rational *lhs, Rational *rhs);
 
 #endif

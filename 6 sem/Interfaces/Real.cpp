@@ -1,85 +1,66 @@
 #include "Real.hpp"
 
-Real::Real(const Rational &left, const Rational &right):
+Real::Real(Rational *left, Rational *right):
     left_(left), right_(right)
 {}
 
-
-Real &Real::operator+= (const Real &rhs)
+Real *Real::create(Rational *left, Rational *right)
 {
-    left_ += rhs.left_;
-    right_ += rhs.right_;
-    return *this;
+    if (!left || !right) {
+        return nullptr;
+    }
+    return new Real(left, right);
 }
 
-Real &Real::operator-= (const Real &rhs)
+Real *add(const Real *lhs, const Real *rhs)
 {
-    left_ -= rhs.left_;
-    right_ -= rhs.right_;
-    return *this;
+    return Real::create(add(lhs->getLeft(), rhs->getLeft()), 
+                        add(lhs->getRight(), rhs->getRight()));
 }
 
-Real &Real::operator*= (const Real &rhs)
+Real *sub(const Real *lhs, const Real *rhs)
 {
-    left_ = std::min(std::min(left_ * rhs.left_, left_ * rhs.right_), 
-                std::min(right_ * rhs.left_, right_ * rhs.right_));
-    right_ = std::max(std::max(left_ * rhs.left_, left_ * rhs.right_), 
-                std::max(right_ * rhs.left_, right_ * rhs.right_));
-    return *this;
+    return Real::create(sub(lhs->getLeft(), rhs->getLeft()), 
+                        sub(lhs->getRight(), rhs->getRight()));
 }
 
-Real &Real::operator/= (const Real &rhs)
+Real *mul(const Real *lhs, const Real *rhs)
 {
-    left_ = std::min(std::min(left_ / rhs.left_, left_ / rhs.right_), 
-                std::min(right_ / rhs.left_, right_ / rhs.right_));
-    right_ = std::max(std::max(left_ / rhs.left_, left_ / rhs.right_), 
-                std::max(right_ / rhs.left_, right_ / rhs.right_));
-    return *this;
+    auto a = RationalUP(mul(lhs->getLeft(), rhs->getLeft())),
+         b = RationalUP(mul(lhs->getLeft(), rhs->getRight())),
+         c = RationalUP(mul(lhs->getRight(), rhs->getLeft())),
+         d = RationalUP(mul(lhs->getRight(), rhs->getRight()));
+
+    Rational *mn = min(min(a.get(), b.get()), min(c.get(), d.get()));
+    Rational *mx = max(max(a.get(), b.get()), max(c.get(), d.get()));
+    return Real::create(mn->copy(), mx->copy());
 }
 
-
-Real Real::operator+ (const Real &rhs) const
+Real *div(const Real *lhs, const Real *rhs)
 {
-    Real cpy = *this;
-    cpy += rhs;
-    return cpy;
+    auto a = RationalUP(div(lhs->getLeft(), rhs->getLeft())),
+         b = RationalUP(div(lhs->getLeft(), rhs->getRight())),
+         c = RationalUP(div(lhs->getRight(), rhs->getLeft())),
+         d = RationalUP(div(lhs->getRight(), rhs->getRight()));
+
+    Rational *mn = min(min(a.get(), b.get()), min(c.get(), d.get()));
+    Rational *mx = max(max(a.get(), b.get()), max(c.get(), d.get()));
+    return Real::create(mn->copy(), mx->copy());
 }
 
-Real Real::operator- (const Real &rhs) const
+const Rational *Real::getLeft() const
 {
-    Real cpy = *this;
-    cpy -= rhs;
-    return cpy;
+    return left_.get();
 }
 
-Real Real::operator* (const Real &rhs) const
+const Rational *Real::getRight() const
 {
-    Real cpy = *this;
-    cpy *= rhs;
-    return cpy;
-}
-
-Real Real::operator/ (const Real &rhs) const
-{
-    Real cpy = *this;
-    cpy /= rhs;
-    return cpy;
-}
-
-
-Rational Real::getLeft() const
-{
-    return left_;
-}
-
-Rational Real::getRight() const
-{
-    return right_;
+    return right_.get();
 }
 
 
 std::ostream &operator<< (std::ostream &out, const Real &r)
 {
-    return out << '[' << r.getLeft() << ", " << r.getRight() << ']';
+    return out << '[' << *r.getLeft() << ", " << *r.getRight() << ']';
 }
 

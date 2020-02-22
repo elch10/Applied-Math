@@ -1,6 +1,7 @@
 #include "Rational.hpp"
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 
 int greatestCommonDivision (int a, int b)
 {
@@ -16,19 +17,26 @@ int leastCommonMultiplier(int a, int b)
     return a / greatestCommonDivision (a, b) * b;
 }
 
-Rational::Rational(int num):
-    Rational(num, 1)
-{}
+Rational *Rational::create(int num, int denom)
+{
+    if (denom == 0) {
+        std::cerr << "Denom cannot be zero: " << __FILE__ << __LINE__ << std::endl;
+        return nullptr;
+    }
+    return new Rational(num, denom);
+}
 
 
 Rational::Rational(int num, int denom):
     num_(num), denom_(denom)
 {
-    if (denom == 0) {
-        throw std::invalid_argument("Denominator cannot be zero");
-    }
     contract();
     resolveSign();
+}
+
+Rational *Rational::copy() const
+{
+    return create(num_, denom_);
 }
 
 void Rational::resolveSign()
@@ -48,102 +56,6 @@ void Rational::contract()
     denom_ /= gcd;
 }
 
-
-Rational &Rational::operator+= (const Rational &rhs)
-{
-    int lcm = leastCommonMultiplier(denom_, rhs.denom_);
-    num_ *= lcm / denom_;
-    num_ += lcm / rhs.denom_ * rhs.num_;
-    denom_ = lcm;
-    contract();
-    resolveSign();
-    return *this;
-}
-
-Rational &Rational::operator-= (const Rational &rhs)
-{
-    Rational cpy = rhs;
-    cpy.num_ *= -1;
-    *this += cpy;
-    return *this;
-}
-
-Rational &Rational::operator*= (const Rational &rhs)
-{
-    num_ *= rhs.num_;
-    denom_ *= rhs.denom_;
-    contract();
-    resolveSign();
-    return *this;
-}
-
-Rational &Rational::operator/= (const Rational &rhs)
-{
-    if (rhs.num_ == 0) {
-        throw std::invalid_argument("Cannot divide to zero");
-    }
-    Rational cpy = rhs;
-    std::swap(cpy.num_, cpy.denom_);
-    cpy.resolveSign();
-    *this *= cpy;
-    return *this;
-}
-
-
-Rational Rational::operator+ (const Rational &rhs) const
-{
-    Rational cpy = *this;
-    cpy += rhs;
-    return cpy;
-}
-
-Rational Rational::operator- (const Rational &rhs) const
-{
-    Rational cpy = *this;
-    cpy -= rhs;
-    return cpy;
-}
-
-Rational Rational::operator* (const Rational &rhs) const
-{
-    Rational cpy = *this;
-    cpy *= rhs;
-    return cpy;
-}
-
-Rational Rational::operator/ (const Rational &rhs) const
-{
-    Rational cpy = *this;
-    cpy /= rhs;
-    return cpy;
-}
-
-bool Rational::operator< (const Rational &rhs) const
-{
-    return (*this - rhs).num_ < 0;
-}
-
-bool Rational::operator> (const Rational &rhs) const
-{
-    return (*this - rhs).num_ > 0;
-}
-
-bool Rational::operator== (const Rational &rhs) const
-{
-    return !(*this > rhs) && !(*this < rhs);
-}
-
-bool Rational::operator<= (const Rational &rhs) const
-{
-    return *this < rhs || *this == rhs;
-}
-
-bool Rational::operator>= (const Rational &rhs) const
-{
-    return *this > rhs || *this == rhs;
-}
-
-
 int Rational::getNum() const
 {
     return num_;
@@ -154,7 +66,6 @@ int Rational::getDenom() const
     return denom_;
 }
 
-
 std::ostream &operator <<(std::ostream &out, const Rational &r)
 {
     out << r.getNum();
@@ -164,3 +75,52 @@ std::ostream &operator <<(std::ostream &out, const Rational &r)
     return out;
 }
 
+Rational *add(const Rational * lhs, const Rational *rhs)
+{
+    int lcm = leastCommonMultiplier(lhs->getDenom(), rhs->getDenom());
+    int num = lcm / lhs->getDenom() * lhs->getNum() 
+            + lcm / rhs->getDenom() * rhs->getNum();
+    return Rational::create(num, lcm);
+}
+
+Rational *sub(const Rational * lhs, const Rational *rhs)
+{
+    /*
+     * Unique_ptr for auto deleting
+     */
+    auto temp = RationalUP(Rational::create(-rhs->getNum(), rhs->getDenom()));
+    return add(lhs, temp.get());
+}
+
+Rational *mul(const Rational * lhs, const Rational *rhs)
+{
+    return Rational::create(lhs->getNum() * rhs->getNum(), 
+                            lhs->getDenom() * rhs->getDenom());
+}
+
+Rational *div(const Rational * lhs, const Rational *rhs)
+{
+    if (rhs->getNum() == 0) {
+        return nullptr;
+    }
+    return mul(lhs, Rational::create(rhs->getDenom(), rhs->getNum()));
+}
+
+
+Rational *min(Rational *lhs, Rational *rhs)
+{
+    auto diff = RationalUP(sub(lhs, rhs));
+    if (diff->getNum() < 0) {
+        return lhs;
+    }
+    return rhs;
+}
+
+Rational *max(Rational *lhs, Rational *rhs)
+{
+    Rational *mn = min(lhs, rhs);
+    if (mn != lhs) {
+        return lhs;
+    }
+    return rhs;
+}
