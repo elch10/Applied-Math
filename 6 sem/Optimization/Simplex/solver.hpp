@@ -21,6 +21,10 @@ private:
   bool isUnbounded;
 
 public:
+  /*
+   * Matrix `matrix` must contain slack variables too, if constraint was (<= or >=)
+   * But c can be with size equal to number of variables (without including slack)
+   */
   SimplexSolver(std::vector <FloatArray > matrix,FloatArray b ,FloatArray c);
 
   bool simplexAlgorithmCalculataion();
