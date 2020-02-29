@@ -3,3 +3,4 @@
 *.out
 out
 META-INF
+node_modules
