@@ -1,4 +1,5 @@
 from functools import partial
+from collections import OrderedDict
 
 import numpy as np
 from scipy import stats
@@ -6,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-samples_size = [10, 50, 100]
+samples_size = [10, 50, 1000]
 
 class Sampler:
     def __init__(self, distribution, *args, **kwargs):
@@ -16,9 +17,9 @@ class Sampler:
 
     def __call__(self, size):
         return self.distribution.rvs(*self.args, **self.kwargs, size=size)
-    
 
-distributions = dict(
+
+distributions = OrderedDict(
     norm=Sampler(stats.norm, 0, 1),
     cauchy=Sampler(stats.cauchy, 0, 1),
     laplace=Sampler(stats.laplace, 0, 1 / np.sqrt(2)),
