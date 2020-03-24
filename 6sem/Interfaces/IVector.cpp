@@ -12,6 +12,7 @@ namespace
     static Vector* createVector(size_t dim, double* pData, ILogger* pLogger);
     Vector* clone() const;
     
+    double norm(NORM norm) const;
     double getCoord(size_t index) const;
     RESULT_CODE setCoord(size_t index, double value);
     size_t getDim() const;
@@ -20,6 +21,8 @@ namespace
     Vector(size_t dim, double *pData);
     std::unique_ptr<double[]> components_;
     size_t dim_;
+  private:
+    static Vector* createHelper(size_t dim, double *pData);
   };
 
   bool isEqualDim(IVector const* pOperand1, IVector const* pOperand2)
@@ -72,6 +75,7 @@ IVector* IVector::mul(IVector const* pOperand1, double scaleParam, ILogger* pLog
 double IVector::mul(IVector const* pOperand1, IVector const* pOperand2, ILogger* pLogger)
 {
   if (!isEqualDim(pOperand1, pOperand2)) {
+    pLogger->log("Differents dims in IVector::mul", RESULT_CODE::WRONG_DIM);
     return NAN;
   }
   double sum = 0;
@@ -88,12 +92,12 @@ RESULT_CODE IVector::equals(IVector const* pOperand1,
                             bool* result, 
                             ILogger* pLogger)
 {
-  if (pOperand1->getDim() != pOperand2->getDim()) {
+  if (!isEqualDim(pOperand1, pOperand2)) {
     pLogger->log("Differents dims in IVector::equals", RESULT_CODE::WRONG_DIM);
     return RESULT_CODE::WRONG_DIM;
   }
-  double norm1 = IVector::norm(pOperand1, norm, pLogger);
-  double norm2 = IVector::norm(pOperand2, norm, pLogger);
+  double norm1 = pOperand1->norm(norm);
+  double norm2 = pOperand2->norm(norm);
   if (std::isnan(norm1) || std::isnan(norm2)) {
     pLogger->log("Nan value in IVector::equals", RESULT_CODE::NAN_VALUE);
     return RESULT_CODE::NAN_VALUE;
@@ -105,29 +109,11 @@ RESULT_CODE IVector::equals(IVector const* pOperand1,
   return RESULT_CODE::SUCCESS;
 }
 
-double IVector::norm(IVector const* pVector, NORM norm, ILogger* pLogger)
+Vector *Vector::createHelper(size_t dim, double *pData)
 {
-  double res = 0.;
-  if (norm == NORM::NORM_1) {
-    for (size_t i = 0; i < pVector->getDim(); ++i) {
-      double value = pVector->getCoord(i);
-      res += abs(value);
-    }
-  } else if (norm == NORM::NORM_2) {
-    for (size_t i = 0; i < pVector->getDim(); ++i) {
-      double value = pVector->getCoord(i);
-      res += value * value;
-    }
-  } else if (norm == NORM::NORM_INF) {
-    for (size_t i = 0; i < pVector->getDim(); ++i) {
-      double value = pVector->getCoord(i);
-      res = std::max(res, value);
-    }
-  } else {
-    pLogger->log("Norm must be one of the declared in the NORM enum", RESULT_CODE::WRONG_ARGUMENT);
-    res = NAN;
-  }
-  return res;
+  double *cpy = new double[dim];
+  std::copy_n(pData, dim, cpy);
+  return new Vector(dim, cpy);
 }
 
 Vector* Vector::createVector(size_t dim, double* pData, ILogger* pLogger)
@@ -145,14 +131,12 @@ Vector* Vector::createVector(size_t dim, double* pData, ILogger* pLogger)
     pLogger->log("", RESULT_CODE::NAN_VALUE);
     return nullptr;
   }
-  double *cpy = new double[dim];
-  std::copy_n(pData, dim, cpy);
-  return new Vector(dim, cpy);
+  return createHelper(dim, pData);
 }
 
 Vector* Vector::clone() const
 {
-  return createVector(dim_, components_.get());
+  return createHelper(dim_, components_.get());
 }
 
 double Vector::getCoord(size_t index) const
@@ -161,6 +145,30 @@ double Vector::getCoord(size_t index) const
     return NAN;
   }
   return components_[index];
+}
+
+double Vector::norm(IVector::NORM norm) const
+{
+  double res = 0.;
+  if (norm == NORM::NORM_1) {
+    for (size_t i = 0; i < dim_; ++i) {
+      double value = components_[i];
+      res += abs(value);
+    }
+  } else if (norm == NORM::NORM_2) {
+    for (size_t i = 0; i < dim_; ++i) {
+      double value = components_[i];
+      res += value * value;
+    }
+  } else if (norm == NORM::NORM_INF) {
+    for (size_t i = 0; i < dim_; ++i) {
+      double value = components_[i];
+      res = std::max(res, value);
+    }
+  } else {
+    res = NAN;
+  }
+  return res;
 }
 
 RESULT_CODE Vector::setCoord(size_t index, double value)
@@ -194,3 +202,5 @@ std::ostream &operator<< (std::ostream &out, const IVector *vec)
   }
   return out;
 }
+
+IVector::~IVector() {}
