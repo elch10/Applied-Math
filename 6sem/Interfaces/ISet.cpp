@@ -31,28 +31,65 @@ ISet *ISet::createSet(ILogger* pLogger)
   return new Set(pLogger);
 }
 
+void copy(ISet const *from, ISet *to, IVector::NORM norm, double tolerance)
+{
+  for (size_t i = 0; i < from->getSize(); ++i) {
+    IVector *tmp;
+    from->get(tmp, i);
+    std::unique_ptr<IVector> lhs(tmp);
+    to->insert(tmp, norm, tolerance);
+  }
+}
+
 ISet* ISet::add(ISet const* pOperand1, ISet const* pOperand2, IVector::NORM norm, double tolerance, ILogger* pLogger)
 {
-  //TODO:
-  return nullptr;
+  ISet *result = ISet::createSet(pLogger);
+  copy(pOperand1, result, norm, tolerance);
+  copy(pOperand2, result, norm, tolerance);
+  return result;
 }
 
 ISet* ISet::intersect(ISet const* pOperand1, ISet const* pOperand2, IVector::NORM norm, double tolerance, ILogger* pLogger)
 {
-  //TODO:
-  return nullptr;
+  ISet *result = ISet::createSet(pLogger);
+  for (size_t i = 0; i < pOperand1->getSize(); ++i) {
+    IVector *tmp;
+    pOperand1->get(tmp, i);
+    std::unique_ptr<IVector> lhs(tmp);
+    
+    RESULT_CODE rc = pOperand2->get(tmp, tmp, norm, tolerance);
+    std::unique_ptr<IVector> rhs(tmp);
+
+    if (rc == RESULT_CODE::SUCCESS) {
+      result->insert(lhs.get(), norm, tolerance);
+    }
+  }
+  return result;
 }
 
 ISet* ISet::sub(ISet const* pOperand1, ISet const* pOperand2, IVector::NORM norm, double tolerance, ILogger* pLogger)
 {
-  //TODO:
-  return nullptr;
+  ISet *result = ISet::createSet(pLogger);
+  for (size_t i = 0; i < pOperand1->getSize(); ++i) {
+    IVector *tmp;
+    pOperand1->get(tmp, i);
+    std::unique_ptr<IVector> lhs(tmp);
+    
+    RESULT_CODE rc = pOperand2->get(tmp, tmp, norm, tolerance);
+    std::unique_ptr<IVector> rhs(tmp);
+
+    if (rc == RESULT_CODE::NOT_FOUND) {
+      result->insert(lhs.get(), norm, tolerance);
+    }
+  }
+  return result;
 }
 
 ISet* ISet::symSub(ISet const* pOperand1, ISet const* pOperand2, IVector::NORM norm, double tolerance, ILogger* pLogger)
 {
-  //TODO:
-  return nullptr;
+  std::unique_ptr<ISet> add(ISet::add(pOperand1, pOperand2, norm, tolerance, pLogger));
+  std::unique_ptr<ISet> intersect(ISet::intersect(pOperand1, pOperand2, norm, tolerance, pLogger));
+  return ISet::sub(add.get(), intersect.get(), norm, tolerance, pLogger);
 }
 
 
@@ -65,6 +102,7 @@ RESULT_CODE Set::insert(const IVector* pVector, IVector::NORM norm, double toler
 {
   IVector *vec;
   RESULT_CODE rc = get(vec, pVector, norm, tolerance);
+  std::unique_ptr<IVector> tmp(vec);
   if (rc != RESULT_CODE::NOT_FOUND) {
     logger_->log("Element already is in Set", RESULT_CODE::MULTIPLE_DEFINITION);
     return RESULT_CODE::MULTIPLE_DEFINITION;
@@ -97,6 +135,7 @@ RESULT_CODE Set::get(IVector*& pVector, IVector const* pSample, IVector::NORM no
       return RESULT_CODE::SUCCESS;
     }
   }
+  pVector = nullptr;
   return RESULT_CODE::NOT_FOUND;
 }
 

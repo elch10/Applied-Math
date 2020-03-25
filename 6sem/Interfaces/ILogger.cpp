@@ -52,7 +52,7 @@ void Logger::destroyLogger(void* pClient)
 
 void Logger::log(char const* pMsg, enum RESULT_CODE err)
 {
-  file_ << pMsg << "\tError code: " << int(err) << std::endl;
+  file_ << pMsg << "\tCode: " << int(err) << std::endl;
 }
 
 RESULT_CODE Logger::setLogFile(char const* pLogFile)

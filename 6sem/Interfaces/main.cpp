@@ -33,12 +33,22 @@ int main()
   std::cout << "sum=" << sum.get() << "\tsub=" << sub.get() << "\tmul=" << mul.get()
         << "\tdot=" << dot << std::endl;
 
-  std::unique_ptr<ISet> set(ISet::createSet(logger));
-  set->insert(sum.get(), IVector::NORM::NORM_1, 1e-6);
-  set->insert(sub.get(), IVector::NORM::NORM_1, 1e-6);
-  set->insert(mul.get(), IVector::NORM::NORM_1, 1e-6);
+  std::unique_ptr<ISet> set1(ISet::createSet(logger));
+  set1->insert(sum.get(), IVector::NORM::NORM_1, 1e-6);
+  set1->insert(sub.get(), IVector::NORM::NORM_1, 1e-6);
+  set1->insert(mul.get(), IVector::NORM::NORM_1, 1e-6);
 
-  std::cout << "Dim=" << set->getDim() << "\tSize=" << set->getSize() << std::endl;
+  std::cout << "Set1: Dim=" << set1->getDim() << "\tSize=" << set1->getSize() << std::endl;
   
+  std::unique_ptr<ISet> set2(ISet::createSet(logger));
+  set2->insert(Vec1.get(), IVector::NORM::NORM_2, 1e-6);
+  set2->insert(sum.get(), IVector::NORM::NORM_2, 1e-6);
+
+  std::cout << "Set2: Dim=" << set2->getDim() << "\tSize=" << set2->getSize() << std::endl;
+
+  std::unique_ptr<ISet> symSub(ISet::symSub(set1.get(), set2.get(), IVector::NORM::NORM_1, 1e-6, logger));
+
+  std::cout << "Symmetric difference set: Dim=" << symSub->getDim() << "\tSize=" << symSub->getSize() << std::endl;
+
   return 0;
 }
