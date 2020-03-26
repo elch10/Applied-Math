@@ -1,5 +1,5 @@
 #include "ILogger.h"
-#include <set>
+#include <unordered_set>
 #include <memory>
 #include <fstream>
 
@@ -18,7 +18,7 @@ namespace
     static std::unique_ptr<Logger> singletonInstance_;
   private:
     std::ofstream file_;
-    std::set<void*> clients_;
+    std::unordered_set<void*> clients_;
   };
 }
 
@@ -34,9 +34,7 @@ Logger *Logger::createLogger(void *pClient)
   if (!singletonInstance_) {
     singletonInstance_ = std::make_unique<Logger>();
   }
-  if (!singletonInstance_->clients_.count(pClient)) {
-    singletonInstance_->clients_.insert(pClient);
-  }
+  singletonInstance_->clients_.insert(pClient);
   return singletonInstance_.get();
 }
 
