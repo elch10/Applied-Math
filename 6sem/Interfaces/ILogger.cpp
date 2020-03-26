@@ -29,11 +29,6 @@ ILogger* ILogger::createLogger(void* pClient)
   return Logger::createLogger(pClient);
 }
 
-void ILogger::destroyLogger(void* pClient)
-{
-  Logger::singletonInstance_->destroyLogger(pClient);
-}
-
 Logger *Logger::createLogger(void *pClient)
 {
   if (!singletonInstance_) {
