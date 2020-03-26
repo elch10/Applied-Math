@@ -162,7 +162,7 @@ double Vector::norm(IVector::NORM norm) const
     }
   } else if (norm == NORM::NORM_INF) {
     for (size_t i = 0; i < dim_; ++i) {
-      double value = components_[i];
+      double value = abs(components_[i]);
       res = std::max(res, value);
     }
   } else {
