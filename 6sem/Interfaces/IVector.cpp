@@ -10,12 +10,12 @@ namespace
   {
   public:
     static Vector* createVector(size_t dim, double* pData, ILogger* pLogger);
-    Vector* clone() const;
+    Vector* clone() const override;
     
-    double norm(NORM norm) const;
-    double getCoord(size_t index) const;
-    RESULT_CODE setCoord(size_t index, double value);
-    size_t getDim() const;
+    double norm(NORM norm) const override;
+    double getCoord(size_t index) const override;
+    RESULT_CODE setCoord(size_t index, double value) override;
+    size_t getDim() const override;
     ~Vector() = default;
   protected:
     Vector(size_t dim, double *pData);

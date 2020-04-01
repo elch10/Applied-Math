@@ -13,9 +13,9 @@ namespace
     RESULT_CODE insert(const IVector* pVector, IVector::NORM norm, double tolerance) override;
     RESULT_CODE get(IVector*& pVector, size_t index) const override;
     RESULT_CODE get(IVector*& pVector, IVector const* pSample, IVector::NORM norm, double tolerance) const override;
-    size_t getDim() const; //space dimensio overriden
-    size_t getSize() const; //num elements in se overridet
-    void clear(); // delete al overridel
+    size_t getDim() const override; //space dimensio overriden
+    size_t getSize() const override; //num elements in se overridet
+    void clear() override; // delete al overridel
     RESULT_CODE erase(size_t index) override;
     RESULT_CODE erase(IVector const* pSample, IVector::NORM norm, double tolerance) override;
     Set* clone() const override;
