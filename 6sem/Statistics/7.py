@@ -24,6 +24,8 @@ def maximal_likelihood(x):
              label='Распределение гаусса', color='olivedrab')
     plt.plot(x_plot, st.norm.pdf(x_plot, mu_hat, sigma_hat),
              label='Оценка максимального правдаподобия', color='indianred')
+    plt.xlabel('x')
+    plt.ylabel('Плотность вероятности')
     plt.legend()
     plt.show()
     
