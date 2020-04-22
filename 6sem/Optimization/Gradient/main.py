@@ -61,6 +61,16 @@ def second_order_descent(x0, eps):
         print(f'Iteration: {step} - {x0}')
     return x0
 
+def applicability():
+    y = np.linspace(-1, 1, 100)
+    x = np.linspace(-5, 1, 100)
+    xy = np.c_[x, y]
+    values = []
+    for i in xy:
+        for j in xy:
+            values.append(j @ (hessian(*i) @ j))
+    return np.min(values), np.max(values)
+
 epss = [0.1, 0.001, 0.0001]
 x0 = [0, 0]
 for eps in epss:
@@ -69,3 +79,12 @@ for eps in epss:
 
     ans = second_order_descent(x0, eps)
     print(f'Ans: {ans}\n')
+
+# x = np.linspace(-4, 1, 100)
+# y = np.linspace(-1, 1, 100)
+# xx, yy = np.meshgrid(x, y)
+# plt.contourf(xx, yy, f(xx, yy))
+# plt.colorbar()
+# plt.show()
+
+# print(applicability())
