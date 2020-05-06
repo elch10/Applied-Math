@@ -25,6 +25,7 @@ def gss(f, a, b, tol=1e-5):
         # We recompute both c and d here to avoid loss of precision which may lead to incorrect results or infinite loop
         c = b - (b - a) / gr
         d = a + (b - a) / gr
+        print(f'left: {c:.3f}, right: {d:.3f}')
 
     return (b + a) / 2
 
@@ -33,6 +34,7 @@ def half_division_method(f, a, b, tol=1e-6):
     while abs(f(x)) >= tol:
         x = (a + b) / 2
         a, b = (a, x) if f(a) * f(x) < 0 else (x, b)
+        print(f'left: {a:.3f}, right: {b:.3f}')
     return (a + b) / 2
 
 def counted(f):
