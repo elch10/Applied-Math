@@ -36,6 +36,7 @@ def gradient_descent(x0, eps):
         grad = grad_f(*x0)
         n = norm(grad)
         if n < eps:
+            print(f'Norm of gradient: {n:.6f}. Stopping')
             break
         x0 -= alpha * grad
         step += 1
@@ -50,6 +51,7 @@ def second_order_descent(x0, eps):
         grad = grad_f(*x0)
         n = norm(grad)
         if n < eps:
+            print(f'Norm of gradient: {n:.6f}. Stopping')
             break
         d = hessian_inverse(*x0) @ grad
         while f(*(x0 - alpha * d)) > f(*x0) - eps * alpha * np.dot(grad, d):

@@ -123,3 +123,14 @@ sns.heatmap(row_compare_matr, annot=True, fmt='.0f')
 plt.show()
 row_compare_matr.to_csv('output/row_compare.csv')
 
+
+# x, y = read_signals(sht_files, signals_n)
+
+# for i in range(len(x)):
+#     x[i], y[i] = get_roi(x[i], y[i])
+#     y[i] = normalize_signal(y[i])
+
+# alphas = [0.8, 0.7, 0.6, 0.4]
+# for i in range(len(x)):
+#     plt.plot(x[i], y[i], label=sht_files[i]+'_'+str(signals_n[i]), alpha=alphas[i])
+# plt.legend()
