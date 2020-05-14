@@ -2,18 +2,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def f(x):
-    return x[0] * x[1] + x[2] ** 2 - np.sin(x[3])
-
-def grad_f(x):
-    return np.array([x[1], x[0], 2 * x[2], -np.cos(x[3])])
-
-def test_f(x):
-    return np.sum(x ** 2)
-
-def test_grad_f(x):
-    return 2 * x
-
 class GradientProjectorOptimizer:
     def __init__(self, f, grad_f, C, d, F, g, step=1, reduction=.5):
         """
@@ -91,12 +79,31 @@ class GradientProjectorOptimizer:
                 
         return self.x
 
-if __name__ == "__main__":
-    C = np.array([[1, 2]])
-    d = np.array([5])
-    F = np.array([[-2, 1]])
-    g = np.array([0])
-    optim = GradientProjectorOptimizer(test_f, test_grad_f, C, d, F, g)
+def f(x):
+    # 2x^2 + 2y^2 + 3z^2 + w^2 + 4x - 6w
+    return 2*x[0]**2 + 2*x[1]**2 + 3*x[2]**2 + x[3]**2 + 4*x[0] - 6*x[3]
 
-    x_star = optim.optimize(np.array([10, -2.5]))
+def grad_f(x):
+    return np.array([
+        4*x[0] + 4,
+        4*x[1],
+        6*x[2],
+        2*x[3] - 6,
+    ])
+
+
+if __name__ == "__main__":
+    C = np.array([
+        [1, 0, 0, 1], # x + w = 2
+        [0, 0, 1, 0]  # z = 0
+    ])
+    d = np.array([2, 0])
+    F = np.array([
+        [1, 1, 1, 0], # x + y + z <= 5
+        [0, 0, 0, -1] # w >= 0
+    ])
+    g = np.array([5, 0])
+    optim = GradientProjectorOptimizer(f, grad_f, C, d, F, g)
+
+    x_star = optim.optimize(np.array([-8, 4, 0, 10]))
     print(f'Ans: {x_star}')
