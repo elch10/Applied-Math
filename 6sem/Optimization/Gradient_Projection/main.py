@@ -55,6 +55,8 @@ class GradientProjectorOptimizer:
 
 
     def optimize(self, x0, verbose=1):
+        assert np.all(np.isclose(self.C @ x0, self.d))
+
         self.x = x0
         self._extract_constraints()
         n = self.x.shape[0]
