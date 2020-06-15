@@ -192,15 +192,4 @@ Vector::Vector(size_t dim, double *pData):
   dim_(dim), components_(pData)
 {}
 
-std::ostream &operator<< (std::ostream &out, const IVector *vec)
-{
-  if (!vec) {
-    return out;
-  }
-  for (int i = 0; i < vec->getDim(); ++i) {
-    out << vec->getCoord(i) << ' ';
-  }
-  return out;
-}
-
 IVector::~IVector() {}

@@ -8,6 +8,17 @@
 
 using Vect = std::unique_ptr<IVector>;
 
+std::ostream &operator<< (std::ostream &out, const IVector *vec)
+{
+  if (!vec) {
+    return out;
+  }
+  for (int i = 0; i < vec->getDim(); ++i) {
+    out << vec->getCoord(i) << ' ';
+  }
+  return out;
+}
+
 int main()
 {
   size_t dim = 2;

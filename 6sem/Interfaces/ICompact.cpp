@@ -2,7 +2,6 @@
 #include "IVector.h"
 
 #include <memory>
-#include <algorithm>
 #include <cmath>
 
 namespace
@@ -12,18 +11,18 @@ namespace
   public:
     Compact(IVector * begin, IVector * end, ILogger *logger);
 
-    IVector* getBegin() const;
-    IVector* getEnd() const;
+    IVector* getBegin() const override;
+    IVector* getEnd() const override;
 
-    iterator* end(IVector const* const step = 0);
-    iterator* begin(IVector const* const step = 0);
+    iterator* end(IVector const* const step = 0) override;
+    iterator* begin(IVector const* const step = 0) override;
 
-    RESULT_CODE isContains(IVector const* const vec, bool& result) const;
-    RESULT_CODE isSubSet(ICompact const* const other, bool& result) const;
-    RESULT_CODE isIntersects(ICompact const* const other, bool& result) const;
+    RESULT_CODE isContains(IVector const* const vec, bool& result) const override;
+    RESULT_CODE isSubSet(ICompact const* const other, bool& result) const override;
+    RESULT_CODE isIntersects(ICompact const* const other, bool& result) const override;
 
-    size_t getDim() const;
-    ICompact* clone() const;
+    size_t getDim() const override;
+    ICompact* clone() const override;
 
     ~Compact() = default;
 
@@ -32,11 +31,11 @@ namespace
     public:
       iterator_impl(IVector const * const startPoint, IVector const * const endPoint, IVector * step);
 
-      RESULT_CODE doStep();
+      RESULT_CODE doStep() override;
 
-      IVector* getPoint() const;
+      IVector* getPoint() const override;
 
-      RESULT_CODE setDirection(IVector const* const dir);
+      RESULT_CODE setDirection(IVector const* const dir) override;
     private:
       std::unique_ptr<IVector> currentPoint_;
       std::unique_ptr<const IVector> step_, prioritizedDimensions_;
