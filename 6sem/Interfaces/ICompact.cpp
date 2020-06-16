@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <cmath>
+#include <algorithm>
 
 namespace
 {
@@ -392,6 +393,19 @@ RESULT_CODE Compact::iterator_impl::setDirection(IVector const* const dir)
   if (dir->getDim() != startPoint_->getDim()) {
     return RESULT_CODE::WRONG_DIM;
   }
+
+  auto sorted = std::make_unique<double[]>(dir->getDim());
+  for (size_t i = 0; i < dir->getDim(); ++i) {
+    sorted[i] = dir->getCoord(i);
+  }
+
+  std::sort(sorted.get(), sorted.get() + dir->getDim());
+  for (size_t i = 0; i < dir->getDim(); ++i) {
+    if (!areSame(sorted[i], i)) {
+      return RESULT_CODE::WRONG_ARGUMENT;
+    }
+  }
+
   dir_.reset(dir->clone());
   return RESULT_CODE::SUCCESS;
 }
