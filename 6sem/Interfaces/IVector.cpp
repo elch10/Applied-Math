@@ -101,7 +101,7 @@ RESULT_CODE IVector::equals(IVector const* pOperand1,
   if (std::isnan(norm1) || std::isnan(norm2)) {
     pLogger->log("Nan value in IVector::equals", RESULT_CODE::NAN_VALUE);
     return RESULT_CODE::NAN_VALUE;
-  } else if (norm1 - norm2 > tolerance) {
+  } else if (std::abs(norm1 - norm2) > tolerance) {
     *result = false;
   } else {
     *result = true;
@@ -160,6 +160,7 @@ double Vector::norm(IVector::NORM norm) const
       double value = components_[i];
       res += value * value;
     }
+    res = std::sqrt(res);
   } else if (norm == NORM::NORM_INF) {
     for (size_t i = 0; i < dim_; ++i) {
       double value = abs(components_[i]);
