@@ -38,7 +38,7 @@ namespace
       RESULT_CODE setDirection(IVector const* const dir) override;
     private:
       std::unique_ptr<IVector> currentPoint_;
-      std::unique_ptr<const IVector> step_, prioritizedDimensions_;
+      std::unique_ptr<const IVector> step_, dir_;
       const IVector * const startPoint_, * const endPoint_;
 
       RESULT_CODE doStepHelper(size_t dimByPriority);
@@ -48,32 +48,65 @@ namespace
     std::unique_ptr<IVector> begin_, end_;
     ILogger *logger_;
   };
+
+  void validLogging(ILogger *pLogger, const char *msg, RESULT_CODE rc)
+  {
+    if (pLogger) {
+      pLogger->log(msg, rc);
+    }
+  }
+
+  bool isNullptr(const void * const arg, ILogger *pLogger)
+  {
+    if (!arg) {
+      validLogging(pLogger, "Nullptr arguments", RESULT_CODE::BAD_REFERENCE);
+      return true;
+    }
+    return false;
+  }
+
+  bool areSame(double a, double b)
+  {
+    return std::fabs(a - b) < 1e-5;
+  }
+
 }
 
 
 ICompact* ICompact::createCompact(IVector const * const begin, IVector const * const end, ILogger *logger)
 {
-  bool all_valid = true;
-  if (begin->getDim() != end->getDim()) {
-    logger->log("Dimensions must be equal for begin and end", RESULT_CODE::WRONG_DIM);
+  if (isNullptr(begin, logger) || isNullptr(end, logger)) {
     return nullptr;
   }
+
+  bool all_valid = true;
+  if (begin->getDim() != end->getDim()) {
+    validLogging(logger, "Dimensions must be equal for begin and end", RESULT_CODE::WRONG_DIM);
+    return nullptr;
+  }
+
   for (int i = 0; i < begin->getDim(); ++i) {
     all_valid &= begin->getCoord(i) <= end->getCoord(i);
   }
+
   if (!all_valid) {
-    logger->log("Not all begin coords are less or equal to end coords", RESULT_CODE::WRONG_ARGUMENT);
+    validLogging(logger, "Not all begin coords are less or equal to end coords", RESULT_CODE::WRONG_ARGUMENT);
     return nullptr;
   }
+
   return new Compact(begin->clone(), end->clone(), logger);
 }
 
 
 ICompact* ICompact::intersection(ICompact const * const left, ICompact const * const right, ILogger *logger)
 {
+  if (isNullptr(left, logger) || isNullptr(right, logger)) {
+    return nullptr;
+  }
+
   std::unique_ptr<IVector> begin(left->getBegin()), rightBegin(right->getBegin());
   if (begin->getDim() != rightBegin->getDim()) {
-    logger->log("Dimensions must be equal for two different compacts", RESULT_CODE::WRONG_DIM);
+    validLogging(logger, "Dimensions must be equal for two different compacts", RESULT_CODE::WRONG_DIM);
     return nullptr;
   }
 
@@ -83,7 +116,7 @@ ICompact* ICompact::intersection(ICompact const * const left, ICompact const * c
            l = std::max(begin->getCoord(i), rightBegin->getCoord(i));
 
     if (l > r) {
-      logger->log("Intersection is empty", RESULT_CODE::WRONG_ARGUMENT);
+      validLogging(logger, "Intersection is empty", RESULT_CODE::WRONG_ARGUMENT);
       return nullptr;
     }
     begin->setCoord(i, l);
@@ -93,16 +126,15 @@ ICompact* ICompact::intersection(ICompact const * const left, ICompact const * c
   return new Compact(begin.release(), end.release(), logger);
 }
 
-bool areSame(double a, double b)
-{
-    return std::fabs(a - b) < 1e-5;
-}
-
 
 ICompact* ICompact::add(ICompact const* const left, ICompact const* const right, ILogger *logger)
 {
+  if (isNullptr(left, logger) || isNullptr(right, logger)) {
+    return nullptr;
+  }
+
   if (left->getDim() != right->getDim()) {
-    logger->log("Different dims of left and right in ICompact::add", RESULT_CODE::WRONG_DIM);
+    validLogging(logger, "Different dims of left and right in ICompact::add", RESULT_CODE::WRONG_DIM);
     return nullptr;
   }
   
@@ -118,8 +150,13 @@ ICompact* ICompact::add(ICompact const* const left, ICompact const* const right,
   bool isIntersects = false;
   right->isIntersects(left, isIntersects);
 
-  if (!isIntersects || nEqualEdges < left->getDim() - 1) {
-    logger->log("Union on this compacts is not convex", RESULT_CODE::WRONG_ARGUMENT);
+  bool isSubSet = false, tmp = false;
+  right->isSubSet(left, tmp);
+  isSubSet |= tmp;
+  left->isSubSet(right, tmp);
+
+  if (!isIntersects || (!isSubSet && nEqualEdges < left->getDim() - 1)) {
+    validLogging(logger, "Union on this compacts is not convex", RESULT_CODE::WRONG_ARGUMENT);
     return nullptr;
   }
 
@@ -129,6 +166,10 @@ ICompact* ICompact::add(ICompact const* const left, ICompact const* const right,
 
 ICompact* ICompact::makeConvex(ICompact const* const left, ICompact const* const right, ILogger *logger)
 {
+  if (isNullptr(left, logger) || isNullptr(right, logger)) {
+    return nullptr;
+  }
+
   std::unique_ptr<IVector> begin(left->getBegin()),
                            rightBegin(right->getBegin()),
                            end(left->getEnd()),
@@ -165,8 +206,7 @@ IVector* Compact::getEnd() const
 
 Compact::iterator* Compact::end(IVector const* const step)
 {
-  if (!step) {
-    logger_->log("Step is not specified", RESULT_CODE::WRONG_ARGUMENT);
+  if (isNullptr(step, logger_)) {
     return nullptr;
   }
 
@@ -176,7 +216,7 @@ Compact::iterator* Compact::end(IVector const* const step)
   }
 
   if (!all_valid) {
-    logger_->log("For end iterator all components of the step must be negative", RESULT_CODE::WRONG_ARGUMENT);
+    validLogging(logger_, "For end iterator all components of the step must be negative", RESULT_CODE::WRONG_ARGUMENT);
     return nullptr;
   }
 
@@ -186,8 +226,7 @@ Compact::iterator* Compact::end(IVector const* const step)
 
 Compact::iterator* Compact::begin(IVector const* const step)
 {
-  if (!step) {
-    logger_->log("Step is not specified", RESULT_CODE::WRONG_ARGUMENT);
+  if (isNullptr(step, logger_)) {
     return nullptr;
   }
 
@@ -197,7 +236,7 @@ Compact::iterator* Compact::begin(IVector const* const step)
   }
 
   if (!all_valid) {
-    logger_->log("For begin iterator all components of the step must be positive", RESULT_CODE::WRONG_ARGUMENT);
+    validLogging(logger_, "For begin iterator all components of the step must be positive", RESULT_CODE::WRONG_ARGUMENT);
     return nullptr;
   }
 
@@ -206,10 +245,15 @@ Compact::iterator* Compact::begin(IVector const* const step)
 
 RESULT_CODE Compact::isContains(IVector const* const vec, bool& result) const
 {
+  if (isNullptr(vec, logger_)) {
+    return RESULT_CODE::BAD_REFERENCE;
+  }
+
   if (vec->getDim() != getDim()) {
-    logger_->log("Unequal dimensions in isContains", RESULT_CODE::WRONG_DIM);
+    validLogging(logger_, "Unequal dimensions in isContains", RESULT_CODE::WRONG_DIM);
     return RESULT_CODE::WRONG_DIM;
   }
+
   for (size_t i = 0; i < vec->getDim(); ++i) {
     if (vec->getCoord(i) < begin_->getCoord(i) ||
         vec->getCoord(i) > end_->getCoord(i)) {
@@ -217,6 +261,7 @@ RESULT_CODE Compact::isContains(IVector const* const vec, bool& result) const
       return RESULT_CODE::SUCCESS;
     }
   }
+
   result = true;
   return RESULT_CODE::SUCCESS;
 }
@@ -224,8 +269,12 @@ RESULT_CODE Compact::isContains(IVector const* const vec, bool& result) const
 
 RESULT_CODE Compact::isSubSet(ICompact const* const other, bool& result) const
 {
+  if (isNullptr(other, logger_)) {
+    return RESULT_CODE::BAD_REFERENCE;
+  }
+
   if (other->getDim() != getDim()) {
-    logger_->log("Unequal dimensions in isSubSet", RESULT_CODE::WRONG_DIM);
+    validLogging(logger_, "Unequal dimensions in isSubSet", RESULT_CODE::WRONG_DIM);
     return RESULT_CODE::WRONG_DIM;
   }
 
@@ -245,8 +294,12 @@ RESULT_CODE Compact::isSubSet(ICompact const* const other, bool& result) const
 
 RESULT_CODE Compact::isIntersects(ICompact const* const other, bool& result) const
 {
+  if (isNullptr(other, logger_)) {
+    return RESULT_CODE::BAD_REFERENCE;
+  }
+
   if (other->getDim() != getDim()) {
-    logger_->log("Unequal dimensions in isIntersects", RESULT_CODE::WRONG_DIM);
+    validLogging(logger_, "Unequal dimensions in isIntersects", RESULT_CODE::WRONG_DIM);
     return RESULT_CODE::WRONG_DIM;
   }
 
@@ -286,7 +339,7 @@ Compact::iterator_impl::iterator_impl(IVector const * const startPoint,
   startPoint_(startPoint),
   endPoint_(endPoint),
   step_(step),
-  prioritizedDimensions_(nullptr)
+  dir_(nullptr)
 {}
 
 
@@ -301,9 +354,10 @@ RESULT_CODE Compact::iterator_impl::doStepHelper(size_t dimByPriority)
   if (dimByPriority == startPoint_->getDim()) {
     return RESULT_CODE::OUT_OF_BOUNDS;
   }
+
   size_t dim = dimByPriority;
-  if (prioritizedDimensions_) {
-    dim = prioritizedDimensions_->getCoord(dimByPriority);
+  if (dir_) {
+    dim = dir_->getCoord(dimByPriority);
   }
 
   // Determine in what direction iterator are moving
@@ -331,14 +385,14 @@ IVector* Compact::iterator_impl::getPoint() const
 // p = [2, 0, 1]
 RESULT_CODE Compact::iterator_impl::setDirection(IVector const* const dir)
 {
+  if (!dir) {
+    return RESULT_CODE::BAD_REFERENCE;
+  }
+
   if (dir->getDim() != startPoint_->getDim()) {
     return RESULT_CODE::WRONG_DIM;
   }
-  IVector *priorities = dir->clone();
-  for (size_t i = 0; i < dir->getDim(); ++i) {
-    priorities->setCoord(dir->getCoord(i), i);
-  }
-  prioritizedDimensions_.reset(priorities);
+  dir_.reset(dir->clone());
   return RESULT_CODE::SUCCESS;
 }
 

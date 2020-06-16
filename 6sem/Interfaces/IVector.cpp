@@ -17,6 +17,7 @@ namespace
     RESULT_CODE setCoord(size_t index, double value) override;
     size_t getDim() const override;
     ~Vector() = default;
+
   protected:
     Vector(size_t dim, double *pData);
     std::unique_ptr<double[]> components_;
@@ -29,6 +30,35 @@ namespace
   {
     return pOperand1->getDim() == pOperand2->getDim();
   }
+
+  void validLogging(ILogger *pLogger, const char *msg, RESULT_CODE rc)
+  {
+    if (pLogger) {
+      pLogger->log(msg, rc);
+    }
+  }
+
+  bool isNullptr(const IVector * const vec, ILogger *pLogger)
+  {
+    if (!vec) {
+      validLogging(pLogger, "Nullptr arguments", RESULT_CODE::BAD_REFERENCE);
+      return true;
+    }
+    return false;
+  }
+
+  void resetIfNan(std::unique_ptr<IVector> &vec, ILogger *pLogger)
+  {
+    bool nan = false;
+    for (size_t i = 0; i < vec->getDim(); ++i) {
+      if (std::isnan(vec->getCoord(i))) {
+        vec.reset();
+        validLogging(pLogger, "Nan encountered when calculating", RESULT_CODE::NAN_VALUE);
+        break;
+      }
+    }
+  }
+
 }
 
 
@@ -39,49 +69,77 @@ IVector* IVector::createVector(size_t dim, double* pData, ILogger* pLogger)
 
 IVector* IVector::add(IVector const* pOperand1, IVector const* pOperand2, ILogger* pLogger)
 {
-  if (!isEqualDim(pOperand1, pOperand2)) {
-    pLogger->log("", RESULT_CODE::WRONG_DIM);
+  if (isNullptr(pOperand1, pLogger) || isNullptr(pOperand2, pLogger)) {
     return nullptr;
   }
-  IVector* cpy = pOperand1->clone();
+
+  if (!isEqualDim(pOperand1, pOperand2)) {
+    validLogging(pLogger, "Different dims in IVector::add", RESULT_CODE::WRONG_DIM);
+    return nullptr;
+  }
+
+  std::unique_ptr<IVector> cpy(pOperand1->clone());
   for (int i = 0; i < cpy->getDim(); ++i) {
     cpy->setCoord(i, pOperand1->getCoord(i) + pOperand2->getCoord(i));
   }
-  return cpy;
+
+  resetIfNan(cpy, pLogger);
+  return cpy.release();
 }
 
 IVector* IVector::sub(IVector const* pOperand1, IVector const* pOperand2, ILogger* pLogger)
 {
-  if (!isEqualDim(pOperand1, pOperand2)) {
-    pLogger->log("IVector::sub erorr:", RESULT_CODE::WRONG_DIM);
+  if (isNullptr(pOperand1, pLogger) || isNullptr(pOperand2, pLogger)) {
     return nullptr;
   }
-  IVector* cpy = pOperand1->clone();
+
+  if (!isEqualDim(pOperand1, pOperand2)) {
+    validLogging(pLogger, "IVector::sub erorr:", RESULT_CODE::WRONG_DIM);
+    return nullptr;
+  }
+
+  std::unique_ptr<IVector> cpy(pOperand1->clone());
+
   for (int i = 0; i < cpy->getDim(); ++i) {
     cpy->setCoord(i, pOperand1->getCoord(i) - pOperand2->getCoord(i));
   }
-  return cpy;
+
+  resetIfNan(cpy, pLogger);
+  return cpy.release();
 }
 
 IVector* IVector::mul(IVector const* pOperand1, double scaleParam, ILogger* pLogger)
 {
-  IVector* cpy = pOperand1->clone();
+  if (isNullptr(pOperand1, pLogger)) {
+    return nullptr;
+  }
+
+  std::unique_ptr<IVector> cpy(pOperand1->clone());
+
   for (int i = 0; i < cpy->getDim(); ++i) {
     cpy->setCoord(i, pOperand1->getCoord(i) * scaleParam);
   }
-  return cpy;
+
+  resetIfNan(cpy, pLogger);
+  return cpy.release();
 }
 
 double IVector::mul(IVector const* pOperand1, IVector const* pOperand2, ILogger* pLogger)
 {
-  if (!isEqualDim(pOperand1, pOperand2)) {
-    pLogger->log("Differents dims in IVector::mul", RESULT_CODE::WRONG_DIM);
+  if (isNullptr(pOperand1, pLogger) || isNullptr(pOperand2, pLogger)) {
     return NAN;
   }
+
+  if (!isEqualDim(pOperand1, pOperand2)) {
+    validLogging(pLogger, "Differents dims in IVector::mul", RESULT_CODE::WRONG_DIM);
+    return NAN;
+  }
+
   double sum = 0;
   for (int i = 0; i < pOperand1->getDim(); ++i) {
     sum += pOperand1->getCoord(i) * pOperand2->getCoord(i);
   }
+
   return sum;
 }
 
@@ -92,14 +150,19 @@ RESULT_CODE IVector::equals(IVector const* pOperand1,
                             bool* result, 
                             ILogger* pLogger)
 {
+  if (isNullptr(pOperand1, pLogger) || isNullptr(pOperand2, pLogger)) {
+    return RESULT_CODE::BAD_REFERENCE;
+  }
+
   if (!isEqualDim(pOperand1, pOperand2)) {
-    pLogger->log("Differents dims in IVector::equals", RESULT_CODE::WRONG_DIM);
+    validLogging(pLogger, "Differents dims in IVector::equals", RESULT_CODE::WRONG_DIM);
     return RESULT_CODE::WRONG_DIM;
   }
+
   double norm1 = pOperand1->norm(norm);
   double norm2 = pOperand2->norm(norm);
   if (std::isnan(norm1) || std::isnan(norm2)) {
-    pLogger->log("Nan value in IVector::equals", RESULT_CODE::NAN_VALUE);
+    validLogging(pLogger, "Nan value in IVector::equals", RESULT_CODE::NAN_VALUE);
     return RESULT_CODE::NAN_VALUE;
   } else if (std::abs(norm1 - norm2) > tolerance) {
     *result = false;
@@ -119,18 +182,21 @@ Vector *Vector::createHelper(size_t dim, double *pData)
 Vector* Vector::createVector(size_t dim, double* pData, ILogger* pLogger)
 {
   if (!dim) {
-    pLogger->log("Zero dimension", RESULT_CODE::WRONG_DIM);
+    validLogging(pLogger, "Zero dimension", RESULT_CODE::WRONG_DIM);
     return nullptr;
   }
+
   if (!pData) {
-    pLogger->log("Nullptr in createVector", RESULT_CODE::BAD_REFERENCE);
+    validLogging(pLogger, "Nullptr in createVector", RESULT_CODE::BAD_REFERENCE);
     return nullptr;
   }
+
   bool (*isnan)(double) = std::isnan;
   if (std::find_if(pData, pData + dim, isnan) != pData + dim) {
-    pLogger->log("", RESULT_CODE::NAN_VALUE);
+    validLogging(pLogger, "Nan in data", RESULT_CODE::NAN_VALUE);
     return nullptr;
   }
+
   return createHelper(dim, pData);
 }
 
