@@ -1,1 +1,0 @@
-g++ Rational.cpp Real.cpp main.cpp && ./a.out

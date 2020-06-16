@@ -1,1 +1,1 @@
-g++ -g -std=c++14 main.cpp ILogger.cpp IVector.cpp ISet.cpp ICompact.cpp && ./a.out
+g++ -g -std=c++14 -Iinclude/ main.cpp src/* && ./a.out
