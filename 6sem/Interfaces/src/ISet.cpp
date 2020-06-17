@@ -1,6 +1,8 @@
 #include "ISet.h"
+
 #include <vector>
 #include <memory>
+#include <cmath>
 
 namespace
 {
@@ -25,11 +27,12 @@ namespace
     ILogger *logger_;
   };
 
-  void validLogging(ILogger *pLogger, const char *msg, RESULT_CODE rc)
+  RESULT_CODE validLogging(ILogger *pLogger, const char *msg, RESULT_CODE rc)
   {
     if (pLogger) {
       pLogger->log(msg, rc);
     }
+    return rc;
   }
 
   bool isNullptr(const void * const arg, ILogger *pLogger)
@@ -64,6 +67,16 @@ ISet* ISet::add(ISet const* pOperand1, ISet const* pOperand2, IVector::NORM norm
     return nullptr;
   }
 
+  if (std::isnan(tolerance)) {
+    validLogging(pLogger, "Nan value in add", RESULT_CODE::NAN_VALUE);
+    return nullptr;
+  }
+
+  if (pOperand1->getDim() != pOperand2->getDim()) {
+    validLogging(pLogger, "Different dimensions in add", RESULT_CODE::WRONG_DIM);
+    return nullptr;
+  }
+
   ISet *result = ISet::createSet(pLogger);
   copy(pOperand1, result, norm, tolerance);
   copy(pOperand2, result, norm, tolerance);
@@ -73,6 +86,16 @@ ISet* ISet::add(ISet const* pOperand1, ISet const* pOperand2, IVector::NORM norm
 ISet* ISet::intersect(ISet const* pOperand1, ISet const* pOperand2, IVector::NORM norm, double tolerance, ILogger* pLogger)
 {
   if (isNullptr(pOperand1, pLogger) || isNullptr(pOperand2, pLogger)) {
+    return nullptr;
+  }
+
+  if (std::isnan(tolerance)) {
+    validLogging(pLogger, "Nan value in intersect", RESULT_CODE::NAN_VALUE);
+    return nullptr;
+  }
+
+  if (pOperand1->getDim() != pOperand2->getDim()) {
+    validLogging(pLogger, "Different dimensions in intersect", RESULT_CODE::WRONG_DIM);
     return nullptr;
   }
 
@@ -137,18 +160,21 @@ RESULT_CODE Set::insert(const IVector* pVector, IVector::NORM norm, double toler
     return RESULT_CODE::BAD_REFERENCE;
   }
 
-  IVector *vec;
+  if (std::isnan(tolerance)) {
+    return validLogging(logger_, "Nan value in get", RESULT_CODE::NAN_VALUE);
+  }
+
+  if (!vectors_.empty() && pVector->getDim() != vectors_[0]->getDim()) {
+    return validLogging(logger_, "Different dims in insert", RESULT_CODE::WRONG_DIM);
+  }
+
+
+  IVector *vec = nullptr;
   RESULT_CODE rc = get(vec, pVector, norm, tolerance);
   std::unique_ptr<IVector> tmp(vec);
 
   if (rc != RESULT_CODE::NOT_FOUND) {
-    validLogging(logger_, "Element already is in Set", RESULT_CODE::MULTIPLE_DEFINITION);
-    return RESULT_CODE::MULTIPLE_DEFINITION;
-  }
-
-  if (!vectors_.empty() && vectors_[0]->getDim() != pVector->getDim()) {
-    validLogging(logger_, "Set must contain vectors with equal dims", RESULT_CODE::WRONG_DIM);
-    return RESULT_CODE::WRONG_DIM;
+    return validLogging(logger_, "Element already is in Set", RESULT_CODE::MULTIPLE_DEFINITION);
   }
 
   vectors_.emplace_back(pVector->clone());
@@ -171,6 +197,14 @@ RESULT_CODE Set::get(IVector*& pVector, IVector const* pSample, IVector::NORM no
 {
   if (isNullptr(pSample, logger_)) {
     return RESULT_CODE::BAD_REFERENCE;
+  }
+
+  if (std::isnan(tolerance)) {
+    return validLogging(logger_, "Nan value in get", RESULT_CODE::NAN_VALUE);
+  }
+
+  if (vectors_.size() && pSample->getDim() != vectors_[0]->getDim()) {
+    return validLogging(logger_, "Different dims in get", RESULT_CODE::WRONG_DIM);
   }
 
   for (const auto &vec: vectors_) {
@@ -217,11 +251,24 @@ RESULT_CODE Set::erase(size_t index)
 RESULT_CODE Set::erase(IVector const* pSample, IVector::NORM norm, double tolerance)
 {
   if (isNullptr(pSample, logger_)) {
-    return RESULT_CODE::WRONG_ARGUMENT;
+    return RESULT_CODE::BAD_REFERENCE;
+  }
+
+  if (std::isnan(tolerance)) {
+    return validLogging(logger_, "Nan value in erase", RESULT_CODE::NAN_VALUE);
+  }
+
+  if (getDim() != vectors_[0]->getDim()) {
+    return validLogging(logger_, "Different dims in get", RESULT_CODE::WRONG_DIM);
   }
 
   for (int i = 0; i < vectors_.size(); ++i) {
     std::unique_ptr<IVector> sub(IVector::sub(pSample, vectors_[i].get(), logger_));
+
+    if (!sub) {
+      return RESULT_CODE::WRONG_ARGUMENT;
+    }
+  
     if (sub->norm(norm) < tolerance) {
       vectors_.erase(vectors_.begin() + i);
       return RESULT_CODE::SUCCESS;

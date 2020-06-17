@@ -171,6 +171,11 @@ ICompact* ICompact::makeConvex(ICompact const* const left, ICompact const* const
     return nullptr;
   }
 
+  if (left->getDim() != right->getDim()) {
+    validLogging(logger, "Different dims in makeConvex", RESULT_CODE::WRONG_DIM);
+    return nullptr;
+  }
+
   std::unique_ptr<IVector> begin(left->getBegin()),
                            rightBegin(right->getBegin()),
                            end(left->getEnd()),
@@ -282,8 +287,8 @@ RESULT_CODE Compact::isSubSet(ICompact const* const other, bool& result) const
   std::unique_ptr<IVector> otherBegin(other->getBegin()), otherEnd(other->getEnd());
 
   for (int i = 0; i < begin_->getDim(); ++i) {
-    if (begin_->getCoord(i) < otherBegin->getCoord(i) ||
-        end_->getCoord(i) > otherEnd->getCoord(i)) {
+    if (begin_->getCoord(i) > otherBegin->getCoord(i) ||
+        end_->getCoord(i) < otherEnd->getCoord(i)) {
       result = false;
       return RESULT_CODE::SUCCESS;
     }

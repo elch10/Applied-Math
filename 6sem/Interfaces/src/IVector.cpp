@@ -31,11 +31,12 @@ namespace
     return pOperand1->getDim() == pOperand2->getDim();
   }
 
-  void validLogging(ILogger *pLogger, const char *msg, RESULT_CODE rc)
+  RESULT_CODE validLogging(ILogger *pLogger, const char *msg, RESULT_CODE rc)
   {
     if (pLogger) {
       pLogger->log(msg, rc);
     }
+    return rc;
   }
 
   bool isNullptr(const IVector * const vec, ILogger *pLogger)
@@ -110,6 +111,11 @@ IVector* IVector::sub(IVector const* pOperand1, IVector const* pOperand2, ILogge
 
 IVector* IVector::mul(IVector const* pOperand1, double scaleParam, ILogger* pLogger)
 {
+  if (std::isnan(scaleParam)) {
+    validLogging(pLogger, "Nan value in scalar", RESULT_CODE::NAN_VALUE);
+    return nullptr;
+  }
+
   if (isNullptr(pOperand1, pLogger)) {
     return nullptr;
   }
@@ -154,6 +160,10 @@ RESULT_CODE IVector::equals(IVector const* pOperand1,
     return RESULT_CODE::BAD_REFERENCE;
   }
 
+  if (std::isnan(tolerance)) {
+    return validLogging(pLogger, "Nan value of tolerance", RESULT_CODE::NAN_VALUE);
+  }
+
   if (!isEqualDim(pOperand1, pOperand2)) {
     validLogging(pLogger, "Differents dims in IVector::equals", RESULT_CODE::WRONG_DIM);
     return RESULT_CODE::WRONG_DIM;
@@ -162,8 +172,7 @@ RESULT_CODE IVector::equals(IVector const* pOperand1,
   double norm1 = pOperand1->norm(norm);
   double norm2 = pOperand2->norm(norm);
   if (std::isnan(norm1) || std::isnan(norm2)) {
-    validLogging(pLogger, "Nan value in IVector::equals", RESULT_CODE::NAN_VALUE);
-    return RESULT_CODE::NAN_VALUE;
+    return validLogging(pLogger, "Nan value in IVector::equals", RESULT_CODE::NAN_VALUE);
   } else if (std::abs(norm1 - norm2) > tolerance) {
     *result = false;
   } else {
