@@ -4,12 +4,12 @@ N = size(XTrain,1);
 % Defining variables for quadprog
 Dy = diag(YTrain);
 K = kern(XTrain, XTrain);
-H = (Dy * K * Dy) / 2;
+H = (Dy * K * Dy);
 
 f = -ones(N,1);
 A = [];
 c = [];
-Aeq = YTrain'; 
+Aeq = YTrain';
 ceq = 0;
 cl = zeros(N,1);
 cu = C * ones(N,1);
@@ -21,7 +21,6 @@ alpha(find(alpha > C - threshold)) = 0;
 sv_idxs = find(alpha > threshold & alpha < C - threshold);
 
 w = (alpha .* YTrain)' * XTrain;
-% d = 1 ./ YTrain(sv_idxs, :)' - (w * XTrain(sv_idxs, :)');
 d = 1 ./ YTrain(sv_idxs, :)' - SVMpred(alpha, 0, XTrain, ...
     YTrain, XTrain(sv_idxs, :), kern);
 b = mean(d);
