@@ -40,17 +40,14 @@ switch oType
         % assuming that the largest value in the Svec is
         % chosen so that the following is true for all time
         price(1,:) = 0;
-%         price(end,:) = Svec(end);
-        price(end, :) = Svec(end) .* normcdf(d1(Svec(end), tvec)) - ...
-            X .* exp(-r * (T-tvec)) .* normcdf(d2(Svec(end), tvec));
+        price(end,:) = Svec(end);
         % Specify the expiry time boundary condition
         price(:,end) = max(Svec-X,0);
     case 'PUT'
         % Put in the minimum and maximum price boundary conditions
         % assuming that the largest value in the Svec is
         % chosen so that the following is true for all time
-        price(1,:) =  -Svec(end) .* normcdf(d1(Svec(end), tvec)) + ...
-            X .* exp(-r * (T-tvec)) .* normcdf(d2(Svec(end), tvec));;
+        price(1, :) = X;
         price(end,:) = 0;
         
         % Specify the expiry time boundary condition
@@ -58,14 +55,20 @@ switch oType
 end
 
 % Form the tridiagonal matrix
-B = diag(aj(3:M),-1) + diag(bj(2:M)) + diag(cj(2:M-1),1);
+IN = cat(2, 2:M-1, 1:M-1, 1:M-2);
+JN = cat(2, 1:M-2, 1:M-1, 2:M-1);
+VN = cat(2, aj(3:M), bj(2:M), cj(2:M-1));
+B = sparse(IN, JN, VN);
+
+% B = diag(aj(3:M),-1) + diag(bj(2:M)) + diag(cj(2:M-1),1);
+
 [L,U] = lu(B);
 
 % Solve at each node
 offset = zeros(size(B,2),1);
 for idx = N:-1:1
     offset(1) = aj(2)*price(1,idx);
-    % offset(end) = c(end)*price(end,idx); % This will always be zero
+    offset(end) = cj(end)*price(end,idx);
     price(2:M,idx) = U\(L\(price(2:M,idx+1) - offset));
 end
 
