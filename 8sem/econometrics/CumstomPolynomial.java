@@ -2,12 +2,12 @@ package com.company;
 
 import java.util.Random;
 
-public class CustomFunction {
+public class CumstomPolynomial {
     private Random r = new Random();
     private double std;
     private double[] coefs;
 
-    public CustomFunction(double std, double... coefs) {
+    public CumstomPolynomial(double std, double... coefs) {
         this.std = std;
         this.coefs = coefs.clone();
     }

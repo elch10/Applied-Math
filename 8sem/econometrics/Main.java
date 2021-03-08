@@ -1,13 +1,15 @@
 package com.company;
 
 import org.ejml.simple.SimpleMatrix;
-import org.knowm.xchart.SwingWrapper;
-import org.knowm.xchart.XYChart;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 
 public class Main {
+    static final int MAX_DEGREE = 3;
+    static final int NUM_INTERVALS_TO_CHECK = 5;
+
     public static SimpleMatrix listToVector(List<Double> elems) {
         SimpleMatrix m = new SimpleMatrix(elems.size(), 1);
         for (int i = 0; i < elems.size(); i++) {
@@ -28,12 +30,16 @@ public class Main {
     }
 
     public static void main(String[] args) throws FileNotFoundException {
-        double left=0, right = 40, step = 0.2;
+//        runGeneratedExperiments();
+        runExperimentFromFile("file.txt");
+    }
 
-        double [] coefs = new double[]{5, 10};
+    public static void runGeneratedExperiments() {
+        double left = 0, right = 30, step = 0.5;
+        double [] coefs = new double[]{3, 0, 2, 25};
 
-        for (double std = 10; std <= 10; std *= 10) {
-            CustomFunction cf = new CustomFunction(std, coefs);
+        for (double std = 0.01; std <= 100; std *= 100) {
+            CumstomPolynomial cf = new CumstomPolynomial(std, coefs);
 
             List<Double> gs = new ArrayList<>();
             List<Double> ts = new ArrayList<>();
@@ -42,40 +48,37 @@ public class Main {
                 gs.add(cf.get(t));
             }
 
-            System.out.println("Real std:" + std);
-            System.out.println("Real coefs:" + Arrays.toString(coefs));
             SimpleMatrix tVector = listToVector(ts);
-            SimpleMatrix gtVector = listToVector(gs);
-            fitPolys(tVector, gtVector, 3);
-            System.out.println();
+            SimpleMatrix gVector = listToVector(gs);
+            System.out.println("Std: " + std);
+            new ExperimentRunner(tVector, gVector).run(MAX_DEGREE, NUM_INTERVALS_TO_CHECK);
         }
-
     }
 
-    private static void fitPolys(SimpleMatrix ts, SimpleMatrix gs, int maxDegree) {
-        XYChart chart = new XYChart(800, 600);
-//        chart.getStyler().setYAxisLogarithmic(true);
-        chart.addSeries("Real",
-                vectorToDoubleArray(ts), vectorToDoubleArray(gs));
+    // File must contain on 1st line t values separated by space
+    // one 2nd line X(t) values separated by space
+    public static void runExperimentFromFile(String filename) throws FileNotFoundException {
+        Scanner sc = new Scanner(new File(filename));
 
-        for (int degree = 1; degree <= maxDegree; degree++) {
-            PolynomialApproximation p = new PolynomialApproximation(degree);
-            SimpleMatrix betas = p.estimateBetasFrom(ts, gs);
-            System.out.println("Degree: " + degree);
-            System.out.println("Estimated betas:");
-            betas.print();
+        List<Double> t = new ArrayList<>();
+        List<Double> X = new ArrayList<>();
 
-            SimpleMatrix predicted = p.getValues(ts);
-            double diff = predicted.minus(gs).elementPower(2).elementSum();
-            double dispersion = diff / ts.numRows();
-            System.out.println("Estimated dispersion: " + dispersion);
-            System.out.println();
-
-
-            chart.addSeries("Degree: "+degree,
-                    vectorToDoubleArray(ts), vectorToDoubleArray(predicted));
+        while (true) {
+            String a = sc.next();
+            if (a == "") {
+                break;
+            }
+            t.add(Double.parseDouble(a));
         }
 
-        new SwingWrapper(chart).displayChart();
+        while (true) {
+            String a = sc.next();
+            if (a == "") {
+                break;
+            }
+            X.add(Double.parseDouble(a));
+        }
+
+        new ExperimentRunner(listToVector(t), listToVector(X)).run(MAX_DEGREE, NUM_INTERVALS_TO_CHECK);
     }
 }

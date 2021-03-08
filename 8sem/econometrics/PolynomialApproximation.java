@@ -1,5 +1,7 @@
 package com.company;
 
+import org.ejml.data.DMatrixRMaj;
+import org.ejml.dense.row.linsol.svd.SolvePseudoInverseSvd_DDRM;
 import org.ejml.simple.SimpleMatrix;
 import org.ejml.simple.SimpleSVD;
 
@@ -18,11 +20,14 @@ public class PolynomialApproximation {
 
         SimpleMatrix z = createZMatrix(t);
         SimpleMatrix z_zt = z.mult(z.transpose());
-        SimpleSVD<SimpleMatrix> svd = new SimpleSVD<>(z_zt.getMatrix(), false);
-
-        SimpleMatrix inv_z_zt = svd.getV().mult(svd.getW().invert()).mult(svd.getU().transpose());
         SimpleMatrix b = z.mult(g_t);
-        this.betas = inv_z_zt.mult(b);
+
+        SolvePseudoInverseSvd_DDRM solver = new SolvePseudoInverseSvd_DDRM();
+        solver.setA(z_zt.getDDRM());
+
+        DMatrixRMaj x = new DMatrixRMaj(this.degree+1, 1);
+        solver.solve(b.getDDRM(), x);
+        this.betas = new SimpleMatrix(x);
         return this.betas.copy();
     }
 
@@ -33,8 +38,7 @@ public class PolynomialApproximation {
                 z_data[i][j] = Math.pow(t.get(j, 0), i);
             }
         }
-        SimpleMatrix z = new SimpleMatrix(z_data);
-        return z;
+        return new SimpleMatrix(z_data);
     }
 
     public SimpleMatrix getBetas() {
