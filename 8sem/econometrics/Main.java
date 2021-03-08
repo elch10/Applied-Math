@@ -63,20 +63,18 @@ public class Main {
         List<Double> t = new ArrayList<>();
         List<Double> X = new ArrayList<>();
 
-        while (true) {
-            String a = sc.next();
-            if (a == "") {
-                break;
+	    if (sc.hasNextLine()) {
+            String line = sc.nextLine();
+            for (String el: line.split(" ")) {
+                t.add(Double.parseDouble(el));
             }
-            t.add(Double.parseDouble(a));
         }
 
-        while (true) {
-            String a = sc.next();
-            if (a == "") {
-                break;
+        if (sc.hasNextLine()) {
+            String line = sc.nextLine();
+            for (String el: line.split(" ")) {
+                X.add(Double.parseDouble(el));
             }
-            X.add(Double.parseDouble(a));
         }
 
         new ExperimentRunner(listToVector(t), listToVector(X)).run(MAX_DEGREE, NUM_INTERVALS_TO_CHECK);
