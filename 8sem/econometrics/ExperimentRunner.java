@@ -48,5 +48,8 @@ public class ExperimentRunner {
         double significanceLevel = test.mannWhitneyUTest(firstHalf, secondHalf);
         System.out.println("Statistic: " + test.mannWhitneyU(firstHalf, secondHalf));
         System.out.println("Significance level: " + significanceLevel);
+        
+        double mse = residuals.elementSum() / residuals.numRows();
+        System.out.println("MSE: " + mse);
     }
 }
