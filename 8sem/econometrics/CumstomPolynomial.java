@@ -3,9 +3,9 @@ package com.company;
 import java.util.Random;
 
 public class CumstomPolynomial {
-    private Random r = new Random();
-    private double std;
-    private double[] coefs;
+    private final Random r = new Random();
+    private final double std;
+    private final double[] coefs;
 
     public CumstomPolynomial(double std, double... coefs) {
         this.std = std;
